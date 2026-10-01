@@ -1,0 +1,235 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crypto · Trading Robot</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23080808'/%3E%3Cpath d='M6 21l6-7 5 4 9-11' fill='none' stroke='%23f3d484' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<meta http-equiv="refresh" content="60">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@300;400;500;600&family=Geist+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  /* look modelled on austensor.com: near-black, Geist + Geist Mono, gold/sky accents,
+     hairline borders, bracket-cornered cards, tracked mono labels */
+  :root {
+    --bg:#080808; --surface:#0c0c0d; --surface-2:#111113; --raised:#141416;
+    --border:rgba(255,255,255,.12); --border-soft:rgba(255,255,255,.07);
+    --text:#f0f0f0; --dim:#a1a1aa; --faint:#71717a;
+    --accent:#f3d484; --accent-soft:rgba(243,212,132,.10); --sky:#38bdf8;
+    --up:#34d399; --down:#f87171; --flat:#a1a1aa;
+    --buy-bg:rgba(52,211,153,.08); --buy-fg:#6ee7b7;
+    --sell-bg:rgba(248,113,113,.08); --sell-fg:#fca5a5;
+    --wait-bg:rgba(255,255,255,.04); --wait-fg:#a1a1aa;
+    --mono:'Geist Mono',ui-monospace,SFMono-Regular,Menlo,monospace;
+    --r:.382rem;
+  }
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; scroll-behavior:smooth; }
+  body {
+    font-family:'Geist',-apple-system,system-ui,'Segoe UI',sans-serif;
+    background:var(--bg); color:var(--text); margin:0; padding:0 0 90px;
+    font-size:14.5px; line-height:1.55; -webkit-font-smoothing:antialiased;
+  }
+  .wrap { max-width:1160px; margin:0 auto; padding:0 28px; }
+  a { color:inherit; }
+  .gold { color:var(--accent); }
+
+  header {
+    position:sticky; top:0; z-index:20; backdrop-filter:blur(14px);
+    background:rgba(8,8,8,.82); border-bottom:1px solid var(--border);
+  }
+  .head-in { display:flex; align-items:center; justify-content:space-between; gap:18px; padding:14px 0; }
+  .brand {
+    margin:0; font-size:19px; font-weight:300; letter-spacing:.2em; text-transform:uppercase;
+    display:flex; align-items:center; gap:12px; white-space:nowrap;
+  }
+  .brand .dot { width:6px; height:6px; border-radius:50%; background:var(--accent); box-shadow:0 0 10px var(--accent); flex:none; }
+  .head-meta { font-size:10.5px; color:var(--faint); font-family:var(--mono); text-align:right; letter-spacing:.06em; text-transform:uppercase; }
+  .head-meta b { color:var(--dim); font-weight:500; }
+
+  nav { border-top:1px solid var(--border-soft); padding:10px 0; }
+  .nav-in { display:flex; justify-content:center; }
+  .nav-pill {
+    display:inline-flex; gap:2px; flex-wrap:wrap; justify-content:center;
+    border:1px solid var(--border); border-radius:999px; padding:4px;
+  }
+  nav a {
+    display:inline-flex; align-items:baseline; gap:7px; padding:6px 13px; border-radius:999px;
+    color:var(--dim); text-decoration:none; font:400 11px/1.2 var(--mono);
+    letter-spacing:.08em; text-transform:uppercase; transition:color .15s, background .15s;
+  }
+  nav a .n { color:var(--faint); font-size:10px; }
+  nav a:hover { color:var(--text); }
+  nav a.on { background:var(--text); color:#080808; }
+  nav a.on .n { color:#52525b; }
+
+  main.wrap { padding-top:44px; }
+  p { color:var(--dim); margin:10px 0; }
+  b { font-weight:600; color:var(--text); }
+
+  .page-head { margin-bottom:30px; }
+  .ph-kicker { font:500 11px/1 var(--mono); letter-spacing:.16em; color:var(--faint); margin-bottom:14px; }
+  .ph-title { margin:0; font-size:44px; font-weight:500; letter-spacing:-0.035em; line-height:1.05; }
+  .ph-sub { margin:12px 0 0; color:var(--dim); font-size:15px; max-width:68ch; }
+
+  .sec { display:flex; align-items:baseline; gap:12px; margin:44px 0 16px; flex-wrap:wrap; }
+  h2 { font:400 11px/1 var(--mono); color:var(--dim); text-transform:uppercase; letter-spacing:.16em; margin:0; }
+  h2 .sec-n { color:var(--sky); }
+  .sec-note { font:400 11px var(--mono); color:var(--faint); letter-spacing:.04em; }
+  .sec-note a { color:var(--accent); text-decoration:none; }
+
+  .cards { display:grid; grid-template-columns:repeat(auto-fill, minmax(190px, 1fr)); gap:14px; }
+  .cards.wide { grid-template-columns:repeat(auto-fill, minmax(240px, 1fr)); }
+  .stat, .card {
+    position:relative; background:linear-gradient(180deg, #0f0f10, var(--surface));
+    border:1px solid var(--border-soft); border-radius:var(--r); padding:16px 18px;
+  }
+  /* bracket corners, like the reference site's experiment cards */
+  .stat::before, .card::before, .stat::after, .card::after {
+    content:""; position:absolute; width:9px; height:9px; pointer-events:none;
+    border-color:rgba(255,255,255,.35); border-style:solid;
+  }
+  .stat::before, .card::before { top:-1px; left:-1px; border-width:1px 0 0 1px; }
+  .stat::after, .card::after { bottom:-1px; right:-1px; border-width:0 1px 1px 0; }
+  .s-label, .label { color:var(--faint); font:400 10.5px/1.3 var(--mono); text-transform:uppercase; letter-spacing:.14em; }
+  .s-val, .big { font-size:24px; font-weight:500; margin-top:10px; letter-spacing:-0.02em; font-family:var(--mono); }
+  .s-val.sm { font-size:14px; line-height:1.35; }
+  .s-sub, .card .muted { margin-top:5px; font-size:12px; color:var(--faint); }
+  .hero .s-val { font-size:32px; }
+  .hero .s-label { color:var(--accent); }
+
+  .panel {
+    border:1px solid var(--border-soft); border-radius:var(--r); background:var(--surface);
+    overflow-x:auto; -webkit-overflow-scrolling:touch;
+  }
+  .panel + .panel { margin-top:14px; }
+  table { border-collapse:collapse; width:100%; font-size:13px; }
+  th {
+    background:var(--surface-2); color:var(--faint); font:400 10px/1.2 var(--mono);
+    text-transform:uppercase; letter-spacing:.14em; padding:11px 16px; text-align:left;
+    border-bottom:1px solid var(--border-soft); white-space:nowrap; position:sticky; top:0;
+  }
+  th.num, td.num { text-align:right; font-variant-numeric:tabular-nums; font-family:var(--mono); }
+  td { padding:10px 16px; border-bottom:1px solid var(--border-soft); vertical-align:top; font-variant-numeric:tabular-nums; }
+  td.sym { font-weight:500; font-family:var(--mono); letter-spacing:.02em; }
+  tr:last-child td { border-bottom:none; }
+  tbody tr:hover td, table tr:hover td { background:rgba(255,255,255,.025); }
+  tr.total td { border-top:1px solid var(--border); font-weight:600; background:var(--surface-2); }
+
+  .up { color:var(--up); } .down { color:var(--down); } .flat { color:var(--flat); }
+  .why { color:var(--dim); max-width:560px; font-size:12.5px; }
+  .muted { color:var(--faint); font-size:12.5px; }
+  .empty {
+    border:1px dashed var(--border); border-radius:var(--r); padding:26px; text-align:center;
+    color:var(--faint); font:400 12px var(--mono); letter-spacing:.04em; background:var(--surface);
+  }
+  .warn {
+    color:var(--accent); white-space:pre-wrap; background:var(--accent-soft);
+    border:1px solid rgba(243,212,132,.22); border-radius:var(--r); padding:12px 14px; font-size:12.5px;
+  }
+  .badge {
+    display:inline-block; padding:3px 8px; border-radius:4px; font:500 10px/1.3 var(--mono);
+    letter-spacing:.1em; text-transform:uppercase; border:1px solid transparent;
+  }
+  .badge.buy { background:var(--buy-bg); color:var(--buy-fg); border-color:rgba(52,211,153,.25); }
+  .badge.sell { background:var(--sell-bg); color:var(--sell-fg); border-color:rgba(248,113,113,.25); }
+  .badge.wait { background:var(--wait-bg); color:var(--wait-fg); border-color:var(--border-soft); }
+  .trend-up { color:var(--up); font-weight:500; }
+  .trend-down { color:var(--down); font-weight:500; }
+  .pill {
+    display:inline-block; font:400 10px/1.4 var(--mono); padding:2px 8px; border-radius:4px;
+    letter-spacing:.08em; text-transform:uppercase;
+    background:transparent; border:1px solid var(--border); color:var(--dim); margin-right:4px;
+  }
+  .pill.hot { background:var(--accent-soft); border-color:rgba(243,212,132,.3); color:var(--accent); }
+  a.tk { color:var(--accent); text-decoration:none; font-weight:500; }
+  a.tk:hover { text-decoration:underline; }
+  svg { display:block; }
+  footer {
+    position:fixed; left:0; right:0; bottom:0; z-index:18; text-align:center;
+    background:rgba(8,8,8,.9); backdrop-filter:blur(14px); border-top:1px solid var(--border);
+    padding:13px 16px; color:var(--dim); font:400 11.5px/1.4 var(--mono); letter-spacing:.06em;
+  }
+  footer b { color:var(--text); font-weight:500; }
+
+  .panel h3 { font-size:14px; font-weight:500; color:var(--text); margin:20px 0 8px; letter-spacing:-0.01em; }
+  .panel h3:first-child { margin-top:0; }
+  .panel ul, .panel ol { margin:8px 0; padding-left:20px; color:var(--dim); }
+  .panel li { margin:3px 0; }
+  .panel hr { border:0; border-top:1px solid var(--border-soft); margin:16px 0; }
+  .panel code { background:var(--surface-2); padding:1px 5px; border-radius:4px; font:12px var(--mono); }
+
+  .acct-tag { font:500 10px/1 var(--mono); letter-spacing:.12em; text-transform:uppercase;
+    color:var(--accent); border:1px solid rgba(243,212,132,.35); padding:5px 8px; border-radius:4px; }
+  .acct-switch {
+    display:inline-block; color:var(--dim); text-decoration:none; border:1px solid var(--border);
+    border-radius:var(--r); padding:5px 10px; margin-bottom:5px; transition:color .15s, border-color .15s;
+  }
+  .acct-switch:hover { color:var(--accent); border-color:rgba(243,212,132,.4); }
+  .chart { cursor:crosshair; }
+  .chart svg .cx-line { transition:opacity .1s; }
+  .cx-tip {
+    position:absolute; top:10px; transform:translateX(-50%);
+    background:var(--raised); border:1px solid var(--border); border-radius:var(--r);
+    padding:5px 9px; font:500 11px/1.3 var(--mono); color:var(--text);
+    white-space:nowrap; pointer-events:none; transition:opacity .1s; z-index:3;
+    box-shadow:0 4px 14px rgba(0,0,0,.5);
+  }
+
+  a.brand { color:inherit; text-decoration:none; }
+  .stat:hover, .card:hover { border-color:rgba(255,255,255,.14);
+    background:radial-gradient(260px circle at var(--mx,-200px) var(--my,-200px), rgba(243,212,132,.07), transparent 60%),
+               linear-gradient(180deg, #0f0f10, var(--surface)); }
+  .stat, .card, .panel { transition:border-color .4s; }
+
+  /* cross-page transitions + first-visit entrance (web/fx.js) */
+  @view-transition { navigation:auto; }
+  header { view-transition-name:site-header; }
+  ::view-transition-old(root) { animation:vt-out .45s cubic-bezier(.16,1,.3,1) both; }
+  ::view-transition-new(root) { animation:vt-in .6s cubic-bezier(.16,1,.3,1) both; }
+  @keyframes vt-out { to { opacity:0; filter:blur(8px); transform:scale(.99); } }
+  @keyframes vt-in { from { opacity:0; filter:blur(10px); transform:scale(1.008); } }
+  html.fx .fx-in { opacity:0; transform:translateY(14px); filter:blur(6px);
+    transition:opacity .9s cubic-bezier(.16,1,.3,1) var(--d,0s), transform .9s cubic-bezier(.16,1,.3,1) var(--d,0s),
+               filter .9s cubic-bezier(.16,1,.3,1) var(--d,0s); }
+  html.fx .fx-in.in { opacity:1; transform:none; filter:none; }
+  @media (prefers-reduced-motion:reduce) {
+    ::view-transition-group(*), ::view-transition-old(*), ::view-transition-new(*) { animation:none !important; }
+    html.fx .fx-in { opacity:1 !important; transform:none !important; filter:none !important; }
+  }
+
+  @media (max-width:760px) {
+    .wrap { padding:0 16px; }
+    .head-in { flex-direction:column; align-items:flex-start; gap:8px; }
+    .head-meta { text-align:left; }
+    header { position:static; }
+    .nav-pill { border-radius:var(--r); }
+    .ph-title { font-size:32px; }
+    .s-val, .big { font-size:20px; }
+    .hero .s-val { font-size:26px; }
+    .why { max-width:none; }
+    footer { font-size:10px; }
+  }
+</style></head><body>
+<header><div class="wrap head-in">
+  <a class="brand" href="/trading-bot-live/" title="Back to the intro"><span class="dot"></span>Trading Robot <span class="acct-tag">Main ($100k)</span></a>
+  <span class="head-meta"><br>Main ($100k) · paper · next run: any moment · <b>updated 06:01 UTC</b></span>
+</div>
+<nav><div class="wrap nav-in"><div class="nav-pill"><a href="/trading-bot-live/overview/" class=""><span class="n">01</span>Overview</a><a href="/trading-bot-live/holdings/" class=""><span class="n">02</span>Holdings</a><a href="/trading-bot-live/crypto/" class="on"><span class="n">03</span>Crypto</a><a href="/trading-bot-live/decisions/" class=""><span class="n">04</span>Decisions</a><a href="/trading-bot-live/trades/" class=""><span class="n">05</span>Trades</a><a href="/trading-bot-live/scoreboard/" class=""><span class="n">06</span>Scoreboard</a><a href="/trading-bot-live/universe/" class=""><span class="n">07</span>Universe</a><a href="/trading-bot-live/news/" class=""><span class="n">08</span>News</a><a href="/trading-bot-live/research/" class=""><span class="n">09</span>Research</a></div></div></nav></header>
+<main class="wrap">
+      <div class="page-head"><div class="ph-kicker"><span class="gold">PAGE 03</span> // CRYPTO</div><h1 class="ph-title">Crypto</h1><p class="ph-sub">Trades 24/7 — this sleeve never stops. 3-day vs 10-day average signal, 10 coins.</p></div>
+      <div class="cards">
+        <div class="stat"><div class="s-label">Coins held</div><div class="s-val ">4 <span class='muted'>/ 4</span></div></div>
+        <div class="stat"><div class="s-label">Market value</div><div class="s-val ">$6,056.66</div></div>
+        <div class="stat"><div class="s-label">Open P / L</div><div class="s-val up">$1,168.96</div><div class="s-sub">unrealized</div></div>
+        <div class="stat"><div class="s-label">Realised P / L</div><div class="s-val up">$191.76</div><div class="s-sub">14 closed trade(s)</div></div>
+      </div>
+      <p class="muted">Limits: $1250 per buy, $1500 max per coin,
+        8 trades/day. Emergency stop at &minus;20%.</p>
+      <div class="sec"><h2><span class="sec-n">01 /</span> Coins held</h2></div>
+      <div class="panel"><table><tr><th>Coin</th><th class='num'>Qty</th><th class='num'>Bought&nbsp;at</th><th class='num'>Price&nbsp;now</th><th class='num'>Value</th><th class='num'>Profit / Loss</th></tr><tr><td class='sym'>AAVEUSD</td><td class='num'>9.51223</td><td class='num'>$128.52</td><td class='num'>$167.91</td><td class='num'>$1,597.24</td><td class='num up'>$374.72 <span class='muted'>(+30.65%)</span></td></tr><tr><td class='sym'>AVAXUSD</td><td class='num'>160.508</td><td class='num'>$7.60</td><td class='num'>$11.18</td><td class='num'>$1,794.48</td><td class='num up'>$574.50 <span class='muted'>(+47.09%)</span></td></tr><tr><td class='sym'>LINKUSD</td><td class='num'>84.4917</td><td class='num'>$14.48</td><td class='num'>$14.51</td><td class='num'>$1,225.64</td><td class='num up'>$2.37 <span class='muted'>(+0.19%)</span></td></tr><tr><td class='sym'>SOLUSD</td><td class='num'>12.0567</td><td class='num'>$101.35</td><td class='num'>$119.38</td><td class='num'>$1,439.30</td><td class='num up'>$217.36 <span class='muted'>(+17.79%)</span></td></tr></table></div>
+      <div class="sec"><h2><span class="sec-n">02 /</span> Recent crypto decisions</h2></div>
+      <div class="panel"><table><tr><th>When (UTC)</th><th>Coin</th><th>Call</th><th>Reason</th></tr><tr><td class='num muted'>2026-10-01 05:32</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:32</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:32</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:32</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:02</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:02</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:02</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 05:02</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:32</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:32</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:32</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:32</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:12</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:12</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:12</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:12</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:02</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:02</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:02</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 04:02</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:32</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:32</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:32</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:32</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:02</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:02</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:02</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 03:02</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:32</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:32</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:32</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:32</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:02</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:02</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:02</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 02:02</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 01:32</td><td class='sym'>SOL/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>SOL/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 01:32</td><td class='sym'>LINK/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>LINK/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 01:32</td><td class='sym'>AVAX/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AVAX/USD still trending up. Keep holding.</td></tr><tr><td class='num muted'>2026-10-01 01:32</td><td class='sym'>AAVE/USD</td><td><span class='badge wait'>WAIT</span></td><td class='why'>AAVE/USD still trending up. Keep holding.</td></tr></table></div>
+    
+</main>
+<footer>© 2026 <b>Trading Robot</b> · paper money only · not financial advice · snapshot, republished every ~30 min</footer>
+<script src="/trading-bot-live/static/fx.js" defer></script>
+</body></html>
