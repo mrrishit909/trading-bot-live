@@ -702,7 +702,7 @@
     $("#orbitSub").textContent = plural(stocksHeld().length, "stock", "stocks") + " · " + plural(coinsHeld().length, "coin", "coins") + (sl ? " · SPY sleeve " + fmt.money(sl.value, 0) : "");
     all.forEach((p, i) => {
       const kind = p.kind === "sleeve" ? "Sleeve" : p.kind === "crypto" ? "Crypto" : "Stock";
-      const href = p.kind === "crypto" ? "/crypto" : "/holdings";
+      const href = p.kind === "crypto" ? "/trading-bot-live/crypto/" : "/trading-bot-live/holdings/";
       const cv = h("canvas", { "aria-hidden": "true" });
       const card = h("a", { class: "hcard brk spot" + (p.kind === "sleeve" ? " sleeve" : ""), href, "data-reveal": "", "data-cur": "OPEN", "data-sym": p.sym },
         h("span", { class: "glow" }),
@@ -1015,15 +1015,15 @@
   function renderEnter() {
     const box = $("#enter"); box.textContent = "";
     const pages = [
-      ["/overview", "overview", "Overview", "Account value, the chart, today's picks"],
-      ["/holdings", "holdings", "Holdings", "Every stock position, with profit and loss"],
-      ["/crypto", "crypto", "Crypto", "The 24/7 coin sleeve"],
-      ["/decisions", "decisions", "Decisions", "Every BUY, SELL and WAIT, with the reason"],
-      ["/trades", "trades", "Trades", "Every order: filled, blocked or skipped"],
-      ["/scoreboard", "scoreboard", "Scoreboard", "Real results vs the S&P 500"],
-      ["/universe", "universe", "Universe", "All " + fmt.int(R().universe) + " stocks and their signals"],
-      ["/news", "news", "News", "The pre-market read, day by day"],
-      ["/research", "research", "Research", "The robot's nightly self-review"],
+      ["/trading-bot-live/overview/", "overview", "Overview", "Account value, the chart, today's picks"],
+      ["/trading-bot-live/holdings/", "holdings", "Holdings", "Every stock position, with profit and loss"],
+      ["/trading-bot-live/crypto/", "crypto", "Crypto", "The 24/7 coin sleeve"],
+      ["/trading-bot-live/decisions/", "decisions", "Decisions", "Every BUY, SELL and WAIT, with the reason"],
+      ["/trading-bot-live/trades/", "trades", "Trades", "Every order: filled, blocked or skipped"],
+      ["/trading-bot-live/scoreboard/", "scoreboard", "Scoreboard", "Real results vs the S&P 500"],
+      ["/trading-bot-live/universe/", "universe", "Universe", "All " + fmt.int(R().universe) + " stocks and their signals"],
+      ["/trading-bot-live/news/", "news", "News", "The pre-market read, day by day"],
+      ["/trading-bot-live/research/", "research", "Research", "The robot's nightly self-review"],
     ];
     pages.forEach((p, i) => box.append(h("a", { class: "ecard brk spot", href: p[0], "data-reveal": "", "data-cur": "OPEN" },
       h("span", { class: "glow" }), h("div", { class: "pv" }, glyph(p[1])),
